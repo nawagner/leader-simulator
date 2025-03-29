@@ -114,7 +114,7 @@ async function searchLeaderConnections(leaderName: string): Promise<string[]> {
       
       // For now, we'll use OpenAI to simulate search results based on the query
       const response = await openai.chat.completions.create({
-        model: "gpt-4",
+        model: "o3-mini-2025-01-31",
         messages: [
           { 
             role: "system", 
@@ -131,7 +131,7 @@ async function searchLeaderConnections(leaderName: string): Promise<string[]> {
           },
           { role: "user", content: query }
         ],
-        temperature: 0.7
+        // temperature: 0.7
       });
       
       const content = response.choices[0].message.content;
@@ -164,7 +164,7 @@ async function extractConnectionsFromSearch(
     
     // Use OpenAI to extract entities and relationships
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "o3-mini-2025-01-31",
       messages: [
         { 
           role: "system", 
@@ -200,7 +200,7 @@ async function extractConnectionsFromSearch(
         },
         { role: "user", content: combinedResults }
       ],
-      temperature: 0.3,
+      // temperature: 0.3,
       response_format: { type: "json_object" }
     });
     
@@ -363,7 +363,7 @@ async function generateConnectionInsights(
   
   try {
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "o3-mini-2025-01-31",
       messages: [
         { 
           role: "system", 
@@ -392,7 +392,7 @@ async function generateConnectionInsights(
           }`
         }
       ],
-      temperature: 0.3,
+      // temperature: 0.3,
       response_format: { type: "json_object" }
     });
     
