@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { NetworkGraph } from '@/components/leaders/network-graph';
 import { NetworkInsights } from '@/components/leaders/network-insights';
+import { ScenarioPlanning } from '@/components/leaders/scenario-planning';
 import { LoadingSpinner } from '@/components/loading-spinner';
 
 interface Entity {
@@ -44,7 +45,7 @@ export function LeaderAnalysis() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [networkData, setNetworkData] = useState<NetworkData | null>(null);
-  const [activeTab, setActiveTab] = useState<'graph' | 'insights'>('graph');
+  const [activeTab, setActiveTab] = useState<'graph' | 'insights' | 'scenario'>('graph');
   const [analysisMode, setAnalysisMode] = useState<'news' | 'web'>('news'); // Default to news analysis
   
   // Debug logging to track data flow
@@ -280,6 +281,13 @@ export function LeaderAnalysis() {
                 >
                   Network Insights
                 </Button>
+                <Button
+                  variant={activeTab === 'scenario' ? 'default' : 'ghost'}
+                  className="rounded-none"
+                  onClick={() => setActiveTab('scenario')}
+                >
+                  Scenario Planning
+                </Button>
               </nav>
             </div>
           </CardHeader>
@@ -315,6 +323,14 @@ export function LeaderAnalysis() {
                 entities={networkData.entities}
                 collection_timestamp={networkData.collection_timestamp}
                 data_points_analyzed={networkData.data_points_analyzed}
+              />
+            )}
+            
+            {activeTab === 'scenario' && (
+              <ScenarioPlanning
+                leaderName={leaderName}
+                entities={networkData.entities || []}
+                relationships={networkData.relationships || []}
               />
             )}
           </CardContent>
