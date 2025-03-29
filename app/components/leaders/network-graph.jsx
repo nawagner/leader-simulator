@@ -50,10 +50,31 @@ export function NetworkGraph({ entities, relationships }) {
   const tooltipRef = useRef(null);
   
   useEffect(() => {
-    if (!svgRef.current || !entities.length || !relationships.length) return;
+    if (!svgRef.current) return;
     
     // Clear previous graph
     d3.select(svgRef.current).selectAll("*").remove();
+    
+    // Log what we're receiving to debug
+    console.log(`[NetworkGraph] Rendering with ${entities?.length || 0} entities and ${relationships?.length || 0} relationships`);
+    console.log('[NetworkGraph] Entities:', entities);
+    console.log('[NetworkGraph] Relationships:', relationships);
+    
+    // Don't proceed with rendering if we truly have no data
+    if (!entities?.length || !relationships?.length) {
+      // Add a message when there's no data
+      const svg = d3.select(svgRef.current)
+        .attr('width', 800)
+        .attr('height', 600);
+        
+      svg.append('text')
+        .attr('x', 400)
+        .attr('y', 300)
+        .attr('text-anchor', 'middle')
+        .style('font-size', '16px')
+        .text('No network data available. Try searching for a leader.');
+      return;
+    }
     
     const width = 800;
     const height = 600;
@@ -148,7 +169,7 @@ export function NetworkGraph({ entities, relationships }) {
       .selectAll('line')
       .data(links)
       .join('line')
-      .attr('stroke', d => getRelationshipColor(d.sentiment))
+      .attr('stroke', d => getRelationshipColor(d.type, d.sentiment))
       .attr('stroke-width', d => Math.min(Math.max(d.strength, 1), 3))
       .attr('stroke-opacity', 0.8)
       .on('mouseover', function(event, d) {

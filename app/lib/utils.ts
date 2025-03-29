@@ -68,6 +68,12 @@ const ENTITY_NAME_MAPPINGS: Record<string, string> = {
   'пентагон': 'pentagon',
   'белый дом': 'white house',
   'кремль': 'kremlin',
+  'индия': 'india',
+  'лавров': 'lavrov',
+  'сергей лавров': 'sergey lavrov',
+  'песков': 'peskov',
+  'дмитрий песков': 'dmitry peskov',
+  'мзс': 'ministry of foreign affairs',
   
   // Greek to English (from the network graph)
   'ἵνα ἀντερῶν': 'ivanka trump',
@@ -88,6 +94,24 @@ const ENTITY_NAME_MAPPINGS: Record<string, string> = {
   'трaмп': 'trump',
   'америка': 'america',
   'американские президенты': 'american presidents',
+  'білий дім': 'white house',
+  'уніан': 'unian',
+  'гітлер': 'hitler',
+  
+  // Chinese, Arabic, and other languages (from logs)
+  '普京': 'putin',
+  '阿萨德': 'assad',
+  '泽连斯基': 'zelensky',
+  'ترامب': 'trump',   // Arabic Trump
+  'بوتين': 'putin',   // Arabic Putin
+  'ट्रम्प': 'trump',   // Hindi Trump
+  'ट्रंप': 'trump',    // Alternative Hindi Trump
+  'ট্রাম্প': 'trump',  // Bengali Trump
+  'পুতিন': 'putin',   // Bengali Putin
+  
+  // European names and variations
+  'američkih predsednika': 'american presidents',
+  'kremlj': 'kremlin',
   
   // Korean and other Asian languages to English
   '트럼프 행정부': 'trump administration',
@@ -125,7 +149,18 @@ const ENTITY_NAME_MAPPINGS: Record<string, string> = {
   // Additional mappings from the graph
   'donald trump': 'donald trump',
   'trumps': 'donald trump',
-  'trump': 'donald trump',
+  
+  // Ensure consistent handling of Putin variations
+  'vladimir putin': 'vladimir putin',
+  'v. putin': 'vladimir putin',
+  'vv putin': 'vladimir putin',
+  
+  // Other common political leaders
+  'volodymyr zelensky': 'volodymyr zelensky',
+  
+  'president biden': 'joe biden',
+  
+  'president xi': 'xi jinping',
   'melania trump': 'melania trump',
   'elon musk': 'elon musk',
   'bettina anderson': 'bettina anderson',
@@ -167,13 +202,50 @@ export function isLikelyEnglish(text: string): boolean {
  * @param name The entity name to normalize
  * @returns The normalized entity name (in English where possible)
  */
+/**
+ * Enhanced entity name normalization with more sophisticated matching
+ * @param name The entity name to normalize
+ * @returns The normalized entity name (in English with standardized form)
+ */
 export function normalizeEntityName(name: string): string {
+  if (!name) return '';
+  
   const lowerName = name.toLowerCase().trim();
-  return ENTITY_NAME_MAPPINGS[lowerName] || lowerName;
+  
+  // First check if we have an exact match in our mapping
+  if (ENTITY_NAME_MAPPINGS[lowerName]) {
+    return ENTITY_NAME_MAPPINGS[lowerName];
+  }
+  
+  // Check for substring matches for common high-profile names
+  // This helps with cases like "Russian President Putin" -> "Vladimir Putin"
+  if (lowerName.includes('putin')) {
+    return 'vladimir putin';
+  }
+  
+  if (lowerName.includes('trump') && !lowerName.includes('ivanka') && !lowerName.includes('junior') && !lowerName.includes('jr')) {
+    return 'donald trump';
+  }
+  
+  if ((lowerName.includes('biden') || lowerName.includes('bidden')) && !lowerName.includes('hunter')) {
+    return 'joe biden';
+  }
+  
+  if (lowerName.includes('zelensky') || lowerName.includes('zelenskyy')) {
+    return 'volodymyr zelensky';
+  }
+  
+  if (lowerName.includes('jinping') || (lowerName.includes('xi') && lowerName.length < 15)) {
+    return 'xi jinping';
+  }
+  
+  // Return the original name if no match is found
+  return lowerName;
 }
 
 /**
  * Filter and normalize entities and relationships to improve visualization
+ * Ensures that similar entities are merged and all nodes have connections
  * @param entities List of entities to normalize
  * @param relationships List of relationships to normalize
  * @param englishOnly Whether to filter out non-English entities
@@ -182,18 +254,18 @@ export function normalizeEntityName(name: string): string {
 export function normalizeNetworkData(
   entities: any[], 
   relationships: any[], 
-  englishOnly: boolean = false
+  englishOnly: boolean = true  // Default to English-only now
 ): { entities: any[], relationships: any[] } {
   console.log(`[normalizeNetworkData] Starting with ${entities.length} entities, ${relationships.length} relationships, englishOnly: ${englishOnly}`);
   
   // Debug entity names
   console.log(`[normalizeNetworkData] Original entity names: ${entities.map(e => e.name).join(', ')}`);
   
-  // Step 1: Normalize all entity names first
-  const normalizedNames = new Map(); // Original name -> normalized name
-  const nonEnglishNames = new Set<string>(); // Track non-English entity names (original)
+  // Step 1: Create a complete mapping of all entity names (original and normalized)
+  const entityMap = new Map(); // Maps all names (original and normalized) to their normalized versions
+  const nonEnglishNames = new Set<string>(); // Track non-English entity names
   
-  // First pass - just normalize names and detect language
+  // First pass - normalize all names and track what's non-English
   entities.forEach(entity => {
     if (!entity.name) {
       console.log(`[normalizeNetworkData] Warning: entity without name: ${JSON.stringify(entity)}`);
@@ -203,7 +275,9 @@ export function normalizeNetworkData(
     const originalName = entity.name.toLowerCase().trim();
     const normalizedName = normalizeEntityName(originalName);
     
-    normalizedNames.set(originalName, normalizedName);
+    // Add both the original and normalized name to the map
+    entityMap.set(originalName, normalizedName);
+    entityMap.set(normalizedName, normalizedName); // Map normalized to itself for consistency
     
     if (!isLikelyEnglish(originalName)) {
       nonEnglishNames.add(originalName);
@@ -211,14 +285,43 @@ export function normalizeNetworkData(
     }
   });
 
+  // Add entities from relationships that might not be in entities list
+  relationships.forEach(rel => {
+    const source = (rel.source || '').toLowerCase().trim();
+    const target = (rel.target || '').toLowerCase().trim();
+    
+    if (source && !entityMap.has(source)) {
+      const normalizedSource = normalizeEntityName(source);
+      entityMap.set(source, normalizedSource);
+      entityMap.set(normalizedSource, normalizedSource);
+      console.log(`[normalizeNetworkData] Adding missing entity from relationship source: '${source}' -> '${normalizedSource}'`);
+      
+      if (!isLikelyEnglish(source)) {
+        nonEnglishNames.add(source);
+      }
+    }
+    
+    if (target && !entityMap.has(target)) {
+      const normalizedTarget = normalizeEntityName(target);
+      entityMap.set(target, normalizedTarget);
+      entityMap.set(normalizedTarget, normalizedTarget);
+      console.log(`[normalizeNetworkData] Adding missing entity from relationship target: '${target}' -> '${normalizedTarget}'`);
+      
+      if (!isLikelyEnglish(target)) {
+        nonEnglishNames.add(target);
+      }
+    }
+  });
+
   // Step 2: Create normalized entity objects
   const normalizedEntities = new Map(); // normalized name -> entity object
   
+  // Add all original entities to the normalized map
   entities.forEach(entity => {
     if (!entity.name) return;
     
     const originalName = entity.name.toLowerCase().trim();
-    const normalizedName = normalizedNames.get(originalName) || normalizeEntityName(originalName);
+    const normalizedName = entityMap.get(originalName);
     
     // Skip non-English entities if requested
     if (englishOnly && nonEnglishNames.has(originalName)) {
@@ -228,7 +331,7 @@ export function normalizeNetworkData(
     // If we already have this normalized entity, merge data
     if (normalizedEntities.has(normalizedName)) {
       const existingEntity = normalizedEntities.get(normalizedName);
-      existingEntity.original_names = [...(existingEntity.original_names || []), originalName];
+      existingEntity.original_names = [...new Set([...(existingEntity.original_names || []), originalName])];
     } else {
       normalizedEntities.set(normalizedName, {
         ...entity,
@@ -238,7 +341,45 @@ export function normalizeNetworkData(
     }
   });
   
-  // Step 3: Normalize relationships based on normalized entity names
+  // Step 3: Add entities from relationships if they don't exist yet
+  relationships.forEach(rel => {
+    const sourceOriginal = (rel.source || '').toLowerCase().trim();
+    const targetOriginal = (rel.target || '').toLowerCase().trim();
+    
+    if (!sourceOriginal || !targetOriginal) return;
+    
+    const sourceNormalized = entityMap.get(sourceOriginal);
+    const targetNormalized = entityMap.get(targetOriginal);
+    
+    // Skip non-English entities if requested
+    if (englishOnly) {
+      if (nonEnglishNames.has(sourceOriginal) || nonEnglishNames.has(targetOriginal)) {
+        return;
+      }
+    }
+    
+    // Add source entity if it doesn't exist in normalized entities
+    if (!normalizedEntities.has(sourceNormalized)) {
+      normalizedEntities.set(sourceNormalized, {
+        name: sourceNormalized,
+        type: 'person', // Default type
+        role: 'Unknown', // Default role
+        original_names: [sourceOriginal]
+      });
+    }
+    
+    // Add target entity if it doesn't exist in normalized entities
+    if (!normalizedEntities.has(targetNormalized)) {
+      normalizedEntities.set(targetNormalized, {
+        name: targetNormalized,
+        type: 'person', // Default type
+        role: 'Unknown', // Default role
+        original_names: [targetOriginal]
+      });
+    }
+  });
+  
+  // Step 4: Normalize relationships - this must happen AFTER all entities are added
   let normalizedRelationships = relationships
     .map(rel => {
       const sourceOriginal = (rel.source || '').toLowerCase().trim();
@@ -249,8 +390,20 @@ export function normalizeNetworkData(
         return null;
       }
       
-      const sourceNormalized = normalizedNames.get(sourceOriginal) || normalizeEntityName(sourceOriginal);
-      const targetNormalized = normalizedNames.get(targetOriginal) || normalizeEntityName(targetOriginal);
+      const sourceNormalized = entityMap.get(sourceOriginal);
+      const targetNormalized = entityMap.get(targetOriginal);
+      
+      // Skip non-English entities if requested
+      if (englishOnly) {
+        if (nonEnglishNames.has(sourceOriginal) || nonEnglishNames.has(targetOriginal)) {
+          return null;
+        }
+      }
+      
+      // Ensure both entities exist in our normalized map
+      if (!normalizedEntities.has(sourceNormalized) || !normalizedEntities.has(targetNormalized)) {
+        return null;
+      }
       
       return {
         ...rel,
@@ -262,22 +415,79 @@ export function normalizeNetworkData(
     })
     .filter(rel => rel !== null); // Remove nulls from invalid relationships
   
-  // Step 4: Filter relationships to only include those between valid entities
-  if (englishOnly || true) { // Always filter relationships to valid entities
-    normalizedRelationships = normalizedRelationships.filter(rel => {
-      // Only keep relationships where both source and target exist in our normalized entities
-      return normalizedEntities.has(rel.source) && normalizedEntities.has(rel.target);
-    });
+  // Step 5: Create connectivity fallback - ensure no orphaned nodes
+  // First identify which entities would be disconnected
+  const connectedEntities = new Set<string>();
+  normalizedRelationships.forEach(rel => {
+    connectedEntities.add(rel.source);
+    connectedEntities.add(rel.target);
+  });
+  
+  const disconnectedEntities: string[] = [];
+  let mainEntity = null;
+  let mainEntityName = '';
+  
+  // Find the entity with the most connections to serve as our central node
+  const entityConnectionCounts = new Map<string, number>();
+  normalizedRelationships.forEach(rel => {
+    entityConnectionCounts.set(rel.source, (entityConnectionCounts.get(rel.source) || 0) + 1);
+    entityConnectionCounts.set(rel.target, (entityConnectionCounts.get(rel.target) || 0) + 1);
+  });
+  
+  // Find the most connected entity
+  let maxConnections = 0;
+  for (const [entityName, count] of entityConnectionCounts.entries()) {
+    if (count > maxConnections) {
+      maxConnections = count;
+      mainEntityName = entityName;
+    }
   }
   
+  // If no connected entities found, just pick the first entity as main
+  if (!mainEntityName && normalizedEntities.size > 0) {
+    mainEntityName = Array.from(normalizedEntities.keys())[0];
+  }
+  
+  if (mainEntityName) {
+    mainEntity = normalizedEntities.get(mainEntityName);
+    console.log(`[normalizeNetworkData] Main entity is ${mainEntityName} with ${maxConnections} connections`);
+  }
+  
+  // Connect orphaned nodes to the main entity
+  let fallbackRelationshipsAdded = 0;
+  normalizedEntities.forEach((entity, entityName) => {
+    if (!connectedEntities.has(entityName) && mainEntity && entityName !== mainEntityName) {
+      // This is an orphaned node - connect it to the main entity
+      disconnectedEntities.push(entityName);
+      
+      // Create a fallback relationship
+      normalizedRelationships.push({
+        source: mainEntityName,
+        target: entityName,
+        type: 'connection',
+        sentiment: 'neutral',
+        strength: 1,
+        description: 'Connected entities',
+        is_fallback: true // Mark as a fallback connection
+      });
+      
+      fallbackRelationshipsAdded++;
+    }
+  });
+  
+  console.log(`[normalizeNetworkData] Added ${fallbackRelationshipsAdded} fallback connections to previously disconnected entities: ${disconnectedEntities.join(', ')}`);
+  
+  // All entities should now be connected, create the final result
+  const connectedEntitiesList = Array.from(normalizedEntities.values());
+  
   const result = {
-    entities: Array.from(normalizedEntities.values()),
+    entities: connectedEntitiesList,
     relationships: normalizedRelationships
   };
   
   // Print final normalized entity names for debugging
   console.log(`[normalizeNetworkData] Final normalized entity names: ${result.entities.map(e => e.name).join(', ')}`);
-  console.log(`[normalizeNetworkData] Finished with ${result.entities.length} entities and ${result.relationships.length} relationships`);
+  console.log(`[normalizeNetworkData] Finished with ${result.entities.length} entities and ${result.relationships.length} relationships (including ${fallbackRelationshipsAdded} fallback connections)`);
   
   return result;
 }
