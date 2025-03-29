@@ -5,7 +5,7 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       <PageHeader 
-        title="Leader Network Analyzer" 
+        title="LeaderNet" 
         description="Analyze political leaders and their relationship networks using AI and news data."
       />
       
@@ -15,7 +15,7 @@ export default function Home() {
       
       <footer className="bg-white border-t border-gray-200 py-6">
         <div className="container mx-auto px-4 text-center text-gray-600 text-sm">
-          <p>Leader Network Analyzer - Powered by Next.js, OpenAI, and GDELT</p>
+          <p>LeaderNet - Powered by Next.js, OpenAI, and GDELT</p>
           <p className="mt-2">© {new Date().getFullYear()} All rights reserved</p>
         </div>
       </footer>

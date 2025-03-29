@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Leader Network Analyzer",
+  title: "LeaderNet",
   description: "Analyze political leader networks and explore relationships",
 };
 
