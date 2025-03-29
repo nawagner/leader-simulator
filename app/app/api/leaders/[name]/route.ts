@@ -14,7 +14,7 @@ export async function POST(
   { params }: { params: { name: string } }
 ) {
   try {
-    const { days_back = 30, max_records = 250 } = await request.json();
+    const { days_back = 30, max_records = 250, english_only = false } = await request.json();
     const leaderName = (await params).name;
     
     // Fetch news data from GDELT
@@ -27,8 +27,8 @@ export async function POST(
       );
     }
     
-    // Analyze the network data
-    const networkAnalysis = await analyzeNetworkData(networkData);
+    // Analyze the network data with optional language filtering
+    const networkAnalysis = await analyzeNetworkData(networkData, english_only);
     
     // Generate insights
     const insights = await generateNetworkInsights(networkAnalysis);
@@ -165,9 +165,13 @@ async function extractRelationships(text: string) {
   }
 }
 
-async function analyzeNetworkData(networkData: any[]) {
+import { normalizeNetworkData } from '@/lib/utils';
+
+async function analyzeNetworkData(networkData: any[], englishOnly: boolean = false) {
   const allRelationships: any[] = [];
   const allEntities = new Set<string>();
+  
+  console.log(`[analyzeNetworkData] Processing ${networkData.length} news items, englishOnly: ${englishOnly}`);
   
   for (const dataPoint of networkData) {
     // Combine title and any other relevant text
@@ -192,10 +196,11 @@ async function analyzeNetworkData(networkData: any[]) {
   // Convert entities back to objects
   const uniqueEntities = Array.from(allEntities).map(entity => JSON.parse(entity));
   
-  return {
-    entities: uniqueEntities,
-    relationships: allRelationships
-  };
+  // Apply normalization to connect similar entities across languages
+  const normalizedData = normalizeNetworkData(uniqueEntities, allRelationships, englishOnly);
+  console.log(`[analyzeNetworkData] Normalized ${normalizedData.entities.length} entities and ${normalizedData.relationships.length} relationships`);
+  
+  return normalizedData;
 }
 
 async function generateNetworkInsights(networkAnalysis: any) {

@@ -58,11 +58,27 @@ export function NetworkGraph({ entities, relationships }) {
     const width = 800;
     const height = 600;
     
-    // Create SVG
+    // Create SVG with a group for panning
     const svg = d3.select(svgRef.current)
       .attr('width', width)
       .attr('height', height)
-      .attr('viewBox', [0, 0, width, height]);
+      .attr('viewBox', [0, 0, width, height])
+      .attr('cursor', 'grab'); // Change cursor to indicate draggable
+    
+    // Add graph container group for panning
+    const graphContainer = svg.append('g')
+      .attr('class', 'graph-container');
+    
+    // Add zoom/pan behavior
+    const zoom = d3.zoom()
+      .extent([[0, 0], [width, height]])
+      .scaleExtent([0.1, 3]) // Allow zoom between 0.1x and 3x
+      .on('zoom', (event) => {
+        graphContainer.attr('transform', event.transform);
+      });
+    
+    // Initialize with identity transform and add zoom behavior
+    svg.call(zoom);
       
     // Create tooltip div
     const tooltip = d3.select(tooltipRef.current)
@@ -128,7 +144,7 @@ export function NetworkGraph({ entities, relationships }) {
       .force('collision', d3.forceCollide().radius(40));
     
     // Add links (relationships)
-    const link = svg.append('g')
+    const link = graphContainer.append('g')
       .selectAll('line')
       .data(links)
       .join('line')
@@ -162,7 +178,7 @@ export function NetworkGraph({ entities, relationships }) {
       });
     
     // Add node groups
-    const node = svg.append('g')
+    const node = graphContainer.append('g')
       .selectAll('g')
       .data(nodes)
       .join('g')
@@ -219,7 +235,19 @@ export function NetworkGraph({ entities, relationships }) {
       .attr('text-anchor', 'middle')
       .attr('font-size', '10px')
       .attr('font-weight', 'bold')
-      .attr('pointer-events', 'none');
+      .attr('pointer-events', 'none')
+      .attr('fill', '#333');
+      
+    // Add white background for text labels to improve readability
+    node.insert('rect', 'text')
+      .attr('x', d => -d.id.length * 3)
+      .attr('y', -27)
+      .attr('width', d => d.id.length * 6)
+      .attr('height', 14)
+      .attr('fill', 'white')
+      .attr('fill-opacity', 0.7)
+      .attr('rx', 2)
+      .attr('ry', 2);
     
     // Update positions in simulation
     simulation.on('tick', () => {
@@ -241,6 +269,8 @@ export function NetworkGraph({ entities, relationships }) {
       if (!event.active) simulation.alphaTarget(0.3).restart();
       event.subject.fx = event.subject.x;
       event.subject.fy = event.subject.y;
+      // Add cursor indicating grabbing 
+      d3.select(event.sourceEvent.target.closest('g')).attr('cursor', 'grabbing');
     }
     
     function dragged(event) {
@@ -250,8 +280,21 @@ export function NetworkGraph({ entities, relationships }) {
     
     function dragended(event) {
       if (!event.active) simulation.alphaTarget(0);
-      event.subject.fx = null;
-      event.subject.fy = null;
+      // Return cursor to pointer
+      d3.select(event.sourceEvent.target.closest('g')).attr('cursor', 'pointer');
+      
+      // Check if dragged significantly to decide whether to keep fixed position
+      const dragDistance = Math.sqrt(
+        Math.pow(event.subject.x - event.subject.fx, 2) + 
+        Math.pow(event.subject.y - event.subject.fy, 2)
+      );
+      
+      if (dragDistance < 10) {
+        // Small drag - release back to simulation
+        event.subject.fx = null;
+        event.subject.fy = null;
+      }
+      // Otherwise keep fixed where user positioned it
     }
     
     // Clean up
@@ -264,6 +307,9 @@ export function NetworkGraph({ entities, relationships }) {
     <div className="relative">
       <div ref={tooltipRef} className="tooltip"></div>
       <div className="overflow-auto" style={{ height: '600px' }}>
+        <div className="bg-gray-100 p-2 rounded mb-2 text-xs text-gray-600">
+          <span className="font-medium">Navigation:</span> Drag the background to pan • Drag entities to reposition • Use mouse wheel to zoom in/out
+        </div>
         <svg 
           ref={svgRef} 
           className="mx-auto" 

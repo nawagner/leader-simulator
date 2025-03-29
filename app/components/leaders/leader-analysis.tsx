@@ -39,6 +39,7 @@ export function LeaderAnalysis() {
   const [leaderName, setLeaderName] = useState('');
   const [days, setDays] = useState(30);
   const [maxRecords, setMaxRecords] = useState(250);
+  const [englishOnly, setEnglishOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [networkData, setNetworkData] = useState<NetworkData | null>(null);
@@ -54,6 +55,10 @@ export function LeaderAnalysis() {
 
   const handleMaxRecordsChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setMaxRecords(Number(e.target.value));
+  };
+
+  const handleEnglishOnlyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setEnglishOnly(e.target.checked);
   };
 
   const analyzeLeader = async () => {
@@ -75,6 +80,7 @@ export function LeaderAnalysis() {
         body: JSON.stringify({
           days_back: days,
           max_records: maxRecords,
+          english_only: englishOnly,
         }),
       });
 
@@ -106,7 +112,7 @@ export function LeaderAnalysis() {
         </CardHeader>
         
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-4">
             <div className="md:col-span-2 space-y-2">
               <Label htmlFor="leaderName">Leader Name</Label>
               <Input
@@ -141,6 +147,17 @@ export function LeaderAnalysis() {
                 onChange={handleMaxRecordsChange}
               />
             </div>
+          </div>
+          
+          <div className="flex items-center space-x-2 mt-4">
+            <input
+              type="checkbox"
+              id="englishOnly"
+              checked={englishOnly}
+              onChange={handleEnglishOnlyChange}
+              className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <Label htmlFor="englishOnly" className="text-sm font-medium">English only (connect similar entities across languages)</Label>
           </div>
         </CardContent>
         
