@@ -40,13 +40,15 @@ export function LeaderAnalysis() {
   const [leaderName, setLeaderName] = useState('Vladimir Putin');
   const [days, setDays] = useState(30);
   const [maxRecords, setMaxRecords] = useState(10);
-  const [numConnections, setNumConnections] = useState(12); // Default to 12 top connections
+  const [numConnections, setNumConnections] = useState(25); // Default to 12 top connections
   const [englishOnly, setEnglishOnly] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [networkData, setNetworkData] = useState<NetworkData | null>(null);
   const [activeTab, setActiveTab] = useState<'graph' | 'insights' | 'scenario'>('graph');
-  const [analysisMode, setAnalysisMode] = useState<'news' | 'web'>('news'); // Default to news analysis
+  const [analysisMode, setAnalysisMode] = useState<'news' | 'web'>('web'); // Default to news analysis
+  const [scenarioResult, setScenarioResult] = useState<any>(null);
+  const [scenarioLoading, setScenarioLoading] = useState(false)
   
   // Debug logging to track data flow
   useEffect(() => {
@@ -147,7 +149,7 @@ export function LeaderAnalysis() {
   };
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto">
       <Card className="mb-8">
         <CardHeader>
           <CardTitle>Analyze Political Leader Network</CardTitle>
@@ -220,7 +222,7 @@ export function LeaderAnalysis() {
                     value={numConnections}
                     onChange={handleNumConnectionsChange}
                   />
-                  <span className="text-sm text-gray-500">(5-30)</span>
+                  {/* <span className="text-sm text-gray-500">(5-30)</span> */}
                 </div>
               </div>
             )}
@@ -274,13 +276,13 @@ export function LeaderAnalysis() {
                 >
                   Network Graph
                 </Button>
-                <Button
+                {/* <Button
                   variant={activeTab === 'insights' ? 'default' : 'ghost'}
                   className="rounded-none"
                   onClick={() => setActiveTab('insights')}
                 >
                   Network Insights
-                </Button>
+                </Button> */}
                 <Button
                   variant={activeTab === 'scenario' ? 'default' : 'ghost'}
                   className="rounded-none"
@@ -331,6 +333,10 @@ export function LeaderAnalysis() {
                 leaderName={leaderName}
                 entities={networkData.entities || []}
                 relationships={networkData.relationships || []}
+                scenarioResult={scenarioResult}
+                setScenarioResult={setScenarioResult}
+                isLoading={scenarioLoading}
+                setIsLoading={setScenarioLoading}
               />
             )}
           </CardContent>

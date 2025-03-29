@@ -338,7 +338,7 @@ export function NetworkGraph({ entities, relationships }) {
         />
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4">
-        <div>
+        {/* <div>
           <h4 className="text-sm font-medium mb-1">Entity Types</h4>
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
@@ -354,8 +354,8 @@ export function NetworkGraph({ entities, relationships }) {
               <span className="text-xs">Location</span>
             </div>
           </div>
-        </div>
-        <div>
+        </div> */}
+        {/* <div>
           <h4 className="text-sm font-medium mb-1">Relationship Sentiment</h4>
           <div className="flex items-center space-x-4">
             <div className="flex items-center">
@@ -371,7 +371,7 @@ export function NetworkGraph({ entities, relationships }) {
               <span className="text-xs">Negative</span>
             </div>
           </div>
-        </div>
+        </div> */}
       </div>
     </div>
   );

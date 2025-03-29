@@ -12,12 +12,22 @@ interface ScenarioPlanningProps {
   leaderName: string;
   entities: any[];
   relationships: any[];
+  scenarioResult: any;
+  setScenarioResult: (result: any) => void;
+  isLoading: boolean;
+  setIsLoading: (loading: boolean) => void;
 }
 
-export function ScenarioPlanning({ leaderName, entities, relationships }: ScenarioPlanningProps) {
+export function ScenarioPlanning({ 
+  leaderName, 
+  entities, 
+  relationships, 
+  scenarioResult, 
+  setScenarioResult,
+  isLoading,
+  setIsLoading
+}: ScenarioPlanningProps) {
   const [scenarioQuestion, setScenarioQuestion] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
-  const [scenarioResult, setScenarioResult] = useState<any>(null);
   const [error, setError] = useState<string | null>(null);
 
   const handleQuestionChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -116,11 +126,17 @@ export function ScenarioPlanning({ leaderName, entities, relationships }: Scenar
                 <h4 className="font-medium mb-2">Summary</h4>
                 <p className="text-sm mb-4">{scenarioResult.summary}</p>
                 
+                <h4 className="font-medium mb-2">Network Vulnerabilities</h4>
+                <p className="text-sm mb-4">{scenarioResult.network_vulnerabilities}</p>
+                
                 <h4 className="font-medium mb-2">Network Impact</h4>
                 <p className="text-sm mb-4">{scenarioResult.network_impact}</p>
                 
                 <h4 className="font-medium mb-2">Political Outcomes</h4>
                 <p className="text-sm mb-4">{scenarioResult.political_outcomes}</p>
+                
+                <h4 className="font-medium mb-2">Geopolitical Strategy Implications</h4>
+                <p className="text-sm mb-4">{scenarioResult.geopolitical_strategy}</p>
                 
                 {scenarioResult.key_entities && scenarioResult.key_entities.length > 0 && (
                   <>

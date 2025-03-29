@@ -48,21 +48,25 @@ SCENARIO QUESTION:
 ${question}
 
 Provide a comprehensive analysis in the following format:
-1. Summary: A brief overview of the scenario's potential impact
-2. Network Impact: How the leader's network structure would change
-3. Political Outcomes: Likely geopolitical or domestic political consequences
-4. Key Entities Affected: List of entities most affected with description of impact
-5. Key Relationships Affected: List of relationships that would change with description
+ - Summary: A brief overview of the scenario's potential impact
+ - Network Vulnerabilities: Identify critical vulnerabilities or areas of potential political disruption within the leader's network (power struggles, competing interests, ideological divisions, loyalty concerns, etc.)
+ - Network Impact: How the leader's network structure would change in response to the scenario
+ - Political Outcomes: Analyze both immediate consequences and long-term implications for the leader's position and influence
+ - Geopolitical Strategy Implications: Detail how the network changes would likely affect the leader's foreign policy approach, diplomatic positioning, and strategic calculations
+ - Key Entities Affected: List of entities most affected with detailed description of impact and potential responses
+ - Key Relationships Affected: List of relationships that would change with description of how and why they would evolve
+
+Make sure the answers are succinct and concise.
 `;
 
     // Call OpenAI for scenario analysis
     const response = await openai.chat.completions.create({
-      model: "gpt-4",
+      model: "o3-mini-2025-01-31",
       messages: [
         { role: "system", content: "You are a political network analysis system specializing in scenario planning." },
         { role: "user", content: prompt }
       ],
-      temperature: 0.7,
+      // temperature: 0.7,
     });
 
     // Extract content from the API response
@@ -75,8 +79,10 @@ Provide a comprehensive analysis in the following format:
       leader_name,
       question,
       summary: sections.summary || "No summary available",
+      network_vulnerabilities: sections.network_vulnerabilities || "No vulnerabilities analysis available",
       network_impact: sections.network_impact || "No network impact analysis available",
       political_outcomes: sections.political_outcomes || "No political outcomes analysis available",
+      geopolitical_strategy: sections.geopolitical_strategy || "No geopolitical strategy analysis available",
       key_entities: parseKeyEntities(sections.key_entities || ""),
       key_relationships: parseKeyRelationships(sections.key_relationships || ""),
       full_analysis: responseContent,
@@ -96,16 +102,24 @@ function parseScenarioResponse(content: string): Record<string, string> {
   const sections: Record<string, string> = {};
   
   // Extract Summary
-  const summaryMatch = content.match(/Summary:([\s\S]+?)(?=Network Impact:|$)/);
+  const summaryMatch = content.match(/Summary:([\s\S]+?)(?=Network Vulnerabilities:|$)/);
   sections.summary = summaryMatch ? summaryMatch[1].trim() : "";
+  
+  // Extract Network Vulnerabilities
+  const vulnerabilitiesMatch = content.match(/Network Vulnerabilities:([\s\S]+?)(?=Network Impact:|$)/);
+  sections.network_vulnerabilities = vulnerabilitiesMatch ? vulnerabilitiesMatch[1].trim() : "";
   
   // Extract Network Impact
   const networkMatch = content.match(/Network Impact:([\s\S]+?)(?=Political Outcomes:|$)/);
   sections.network_impact = networkMatch ? networkMatch[1].trim() : "";
   
   // Extract Political Outcomes
-  const outcomesMatch = content.match(/Political Outcomes:([\s\S]+?)(?=Key Entities Affected:|$)/);
+  const outcomesMatch = content.match(/Political Outcomes:([\s\S]+?)(?=Geopolitical Strategy Implications:|$)/);
   sections.political_outcomes = outcomesMatch ? outcomesMatch[1].trim() : "";
+  
+  // Extract Geopolitical Strategy Implications
+  const strategyMatch = content.match(/Geopolitical Strategy Implications:([\s\S]+?)(?=Key Entities Affected:|$)/);
+  sections.geopolitical_strategy = strategyMatch ? strategyMatch[1].trim() : "";
   
   // Extract Key Entities
   const entitiesMatch = content.match(/Key Entities Affected:([\s\S]+?)(?=Key Relationships Affected:|$)/);
